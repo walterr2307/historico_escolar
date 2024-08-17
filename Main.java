@@ -3,119 +3,176 @@ import java.io.*;
 
 public class Main {
     public static void main(String[] args) {
-        int i, j, num_disciplinas, qtd_alunos, qtd_respostas_v, qtd_respostas_f;
-        boolean zerou[];
+        // Declaração de variáveis para controle de fluxo, contagem e armazenamento
+        int i, j, num_disciplinas = 0, qtd_alunos = 0, qtd_respostas_v, qtd_respostas_f;
+        boolean gabarito_valido = true, zerou[];
         char letras[];
-        String disciplinas[], respostas = null, nome_alunos[], formato;
+        String disciplinas[], respostas = null, nome_alunos[], formato, gabarito;
         FileWriter arq_disciplina = null;
+        Calculadora calculadora = new Calculadora();
+        Scanner scanner = new Scanner(System.in);
 
-        try (Scanner scanner = new Scanner(System.in)) {
+        // Inicia um bloco try-finally para garantir o fechamento do Scanner
+        try {
+            // Solicita o número de disciplinas com validação
+            while (true) {
+                System.out.print("Ponha o numero de disciplinas: ");
+                if (scanner.hasNextInt()) {
+                    num_disciplinas = scanner.nextInt();
+                    if (num_disciplinas > 0)
+                        break;
+                    else
+                        System.out.println("O número de disciplinas deve ser maior que zero.");
+                } else {
+                    System.out.println("Entrada inválida. Por favor, insira um número inteiro.");
+                    scanner.next(); // Limpa o buffer do Scanner
+                }
+            }
 
-            // Solicita ao usuário o número de disciplinas e lê a entrada como um inteiro
-            System.out.print("Ponha o numero de disciplinas: ");
-            num_disciplinas = scanner.nextInt();
+            // Solicita a quantidade de alunos com validação
+            while (true) {
+                System.out.print("Insira a quantidade de alunos: ");
+                if (scanner.hasNextInt()) {
+                    qtd_alunos = scanner.nextInt();
+                    if (qtd_alunos > 0)
+                        break;
+                    else
+                        System.out.println("A quantidade de alunos deve ser maior que zero.");
+                } else {
+                    System.out.println("Entrada inválida. Por favor, insira um número inteiro.");
+                    scanner.next(); // Limpa o buffer do Scanner
+                }
+            }
+            scanner.nextLine(); // Limpa o buffer do Scanner
 
-            // Solicita ao usuário a quantidade de alunos e lê a entrada como um inteiro
-            System.out.print("Insira a quantidade de alunos: ");
-            qtd_alunos = scanner.nextInt();
-            scanner.nextLine(); // Limpa o buffer do teclado para evitar problemas na leitura posterior
-
+            // Inicializa os arrays para armazenar os nomes das disciplinas e dos alunos
             disciplinas = new String[num_disciplinas];
             nome_alunos = new String[qtd_alunos];
 
             System.out.println();
 
-            // Lê e armazena o nome de cada aluno
+            // Loop para capturar os nomes dos alunos
             for (i = 0; i < qtd_alunos; i++) {
                 System.out.printf("Coloque o nome do %d* aluno: ", i + 1);
                 nome_alunos[i] = scanner.nextLine();
-                nome_alunos[i] = nome_alunos[i].toUpperCase();
+                nome_alunos[i] = nome_alunos[i].toUpperCase(); // Converte o nome para maiúsculas
             }
 
-            // Solicita ao usuário o nome de cada disciplina e processa as respostas dos
-            // alunos
+            // Loop para capturar o nome de cada disciplina e o respectivo gabarito
             for (i = 0; i < num_disciplinas; i++) {
                 System.out.printf("\nDigite o nome da %d* disciplina: ", i + 1);
-                disciplinas[i] = scanner.nextLine(); // Lê o nome da disciplina
-                disciplinas[i] = disciplinas[i].toUpperCase();
+                disciplinas[i] = scanner.nextLine();
+                disciplinas[i] = disciplinas[i].toUpperCase(); // Converte o nome para maiúsculas
 
+                // Loop para validar o gabarito inserido pelo usuário
+                do {
+                    System.out.print("Digite o gabarito: ");
+                    gabarito = scanner.nextLine();
+
+                    // Verifica se o gabarito tem exatamente 10 caracteres
+                    if (gabarito.length() != 10) {
+                        System.out.println("O gabarito deve ter exatamente 10 caracteres.");
+                        gabarito_valido = false;
+                        continue;
+                    }
+
+                    gabarito_valido = true; // Assume que o gabarito é válido
+                    gabarito = gabarito.trim().toUpperCase(); // Remove espaços e converte para maiúsculas
+                    letras = gabarito.toCharArray(); // Converte o gabarito em um array de caracteres
+                    qtd_respostas_v = 0;
+                    qtd_respostas_f = 0;
+
+                    // Valida cada caractere do gabarito para garantir que seja 'V' ou 'F'
+                    for (char letra : letras) {
+                        if (letra == 'V')
+                            ++qtd_respostas_v;
+                        else if (letra == 'F')
+                            ++qtd_respostas_f;
+                        else {
+                            gabarito_valido = false;
+                            System.out.println("O gabarito deve conter apenas caracteres 'V' ou 'F'.");
+                            break;
+                        }
+                    }
+                } while (!gabarito_valido); // Repete enquanto o gabarito for inválido
+
+                // Bloco try-finally para tratar o arquivo da disciplina e garantir seu
+                // fechamento
                 try {
-                    // Tenta criar e abrir o arquivo para escrita com o nome da disciplina
                     arq_disciplina = new FileWriter(new File(disciplinas[i] + ".txt"));
-
-                    // Inicializa o array de booleanos para rastrear se um aluno "zerou" o teste
-                    zerou = new boolean[qtd_alunos];
+                    formato = String.format("%s\tGABARITO%s", gabarito, System.lineSeparator());
+                    arq_disciplina.write(formato);
+                    zerou = new boolean[qtd_alunos]; // Array para controlar se algum aluno zerou na disciplina
 
                     System.out.printf("\n==============================\n%s\n\n", disciplinas[i]);
 
                     j = 0;
 
-                    // Loop para processar as respostas de cada aluno
+                    // Loop para capturar as respostas dos alunos para a disciplina atual
                     while (j < qtd_alunos) {
-                        zerou[j] = false; // Define que o aluno não zerou o teste por padrão
-                        qtd_respostas_v = 0; // Inicializa o contador de respostas 'V'
-                        qtd_respostas_f = 0; // Inicializa o contador de respostas 'F'
+                        zerou[j] = false; // Inicializa a variável para verificar se o aluno zerou
+                        qtd_respostas_v = 0; // Contador de respostas 'V'
+                        qtd_respostas_f = 0; // Contador de respostas 'F'
 
+                        // Bloco try-catch para capturar e validar as respostas do aluno
                         try {
-                            // Solicita e lê a resposta do aluno
                             System.out.printf("Digite a resposta de %s: ", nome_alunos[j]);
                             respostas = scanner.nextLine();
 
-                            // Converte a resposta em letras maiúsculas e a transforma em um array de
-                            // caracteres
-                            respostas = respostas.trim().toUpperCase();
-                            letras = respostas.toCharArray();
+                            respostas = respostas.trim().toUpperCase(); // Remove espaços e converte para maiúsculas
+                            letras = respostas.toCharArray(); // Converte as respostas em um array de caracteres
 
-                            // Verifica se a resposta tem exatamente 10 caracteres
+                            // Verifica se as respostas têm exatamente 10 caracteres
                             if (respostas.length() != 10)
-                                throw new HistoricoInvalidoException(); // Lança uma exceção se o tamanho for inválido
+                                throw new HistoricoInvalidoException();
 
-                            // Loop para contar o número de respostas 'V' e 'F' e verificar caracteres
-                            // inválidos
+                            // Valida cada resposta e conta a quantidade de 'V' e 'F'
                             for (char letra : letras) {
                                 if (letra == 'V')
-                                    ++qtd_respostas_v; // Incrementa o contador de respostas 'V'
+                                    ++qtd_respostas_v;
                                 else if (letra == 'F')
-                                    ++qtd_respostas_f; // Incrementa o contador de respostas 'F'
+                                    ++qtd_respostas_f;
                                 else
-                                    throw new HistoricoInvalidoException(); // Lança uma exceção se o caractere não for
-                                                                            // 'V' ou 'F'
+                                    throw new HistoricoInvalidoException(); // Exceção personalizada para respostas
+                                                                            // inválidas
                             }
 
-                            // Verifica se o aluno "zerou" o teste (respondeu todas as questões com 'V' ou
-                            // 'F')
+                            // Verifica se o aluno zerou (respondeu todas as questões com 'V' ou 'F')
                             if (qtd_respostas_v == 10 || qtd_respostas_f == 10)
                                 zerou[j] = true;
 
-                            // Formata e escreve os dados no arquivo
-                            formato = String.format("%s\t%s%n", respostas, nome_alunos[j]);
+                            // Formata e escreve as respostas do aluno no arquivo da disciplina
+                            formato = String.format("%s\t%s%s", respostas, nome_alunos[j], System.lineSeparator());
                             arq_disciplina.write(formato);
 
-                            ++j; // Incrementa o índice do aluno para o próximo ciclo
+                            ++j; // Incrementa o índice para o próximo aluno
                         } catch (HistoricoInvalidoException e) {
-                            // Trata exceções lançadas para resposta inválida
+                            // Trata exceções relacionadas a respostas inválidas
                             if (respostas.length() != 10)
-                                e.msgQuantidadeInvalida(); // Mensagem de erro para tamanho inválido
+                                e.msgQuantidadeInvalida();
                             else
-                                e.msgRespostasInvalidas(); // Mensagem de erro para caracteres inválidos
+                                e.msgRespostasInvalidas();
                         }
                     }
-                } catch (IOException e) {
-                    // Trata exceções lançadas ao criar ou manipular o arquivo
-                    System.out.println("Erro ao criar ou manipular o arquivo: " + e.getMessage());
                 } finally {
-                    // Garante que o FileWriter seja fechado
+                    // Garante o fechamento do arquivo da disciplina, tratando possíveis exceções
                     try {
                         if (arq_disciplina != null) {
-                            arq_disciplina.close(); // Fecha o arquivo após a escrita
+                            arq_disciplina.close();
                         }
                     } catch (IOException e) {
                         System.out.println("Erro ao fechar o arquivo: " + e.getMessage());
                     }
                 }
+
+                calculadora.calcularNotas(disciplinas[i], zerou);
             }
 
-            // Fecha o scanner após o uso
+            // Captura qualquer exceção de I/O durante a execução geral do programa
+        } catch (IOException e) {
+            System.out.println("Erro geral de I/O: " + e.getMessage());
+        } finally {
+            // Garante o fechamento do Scanner, se necessário
             scanner.close();
         }
     }
