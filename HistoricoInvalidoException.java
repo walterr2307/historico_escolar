@@ -8,6 +8,6 @@ public class HistoricoInvalidoException extends Exception {
     }
 
     public void mostrarMsgItemInvalido() {
-        System.out.println("Os itens devem ser, somente, V ou F!");
+        System.out.println("Os itens devem ser somente V ou F!");
     }
 }
